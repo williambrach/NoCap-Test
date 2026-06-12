@@ -1,0 +1,7 @@
+exclude:
+  - wandb/
+  - data/
+  - train_gpt2.py
+  - requirements.txt
+  - run.sh
+  - LICENSE
