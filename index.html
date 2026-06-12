@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curriculum FineWeb — train faster by re-ordering data</title>
+<style>
+  :root{
+    --paper:#fbf9f3; --card:#ffffff; --line:#ece7db;
+    --ink:#181813; --muted:#6c675c; --faint:#9a948a;
+    --amber:#c8810a; --amber-bright:#f2b134; --amber-wash:#fdf3dd;
+    --teal:#0e7c7b; --teal-wash:#e3f1f0;
+    --code-bg:#15171c; --code-fg:#e7e7e4; --code-com:#878c96;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+
+  /* ---------- sticky nav ---------- */
+  nav{
+    position:sticky;top:0;z-index:20;
+    background:rgba(251,249,243,.86);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    padding-top:11px;padding-bottom:11px}
+  nav .brand{font-family:var(--mono);font-size:12px;font-weight:600;
+    letter-spacing:.06em;color:var(--amber);margin-right:auto;text-transform:uppercase}
+  nav a{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+    text-decoration:none;padding:4px 9px;border-radius:6px;white-space:nowrap}
+  nav a:hover{background:var(--amber-wash);color:var(--ink)}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:66px 0 40px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--amber);margin:0 0 18px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,5.4vw,54px);
+    line-height:1.08;letter-spacing:-.01em;margin:0 0 20px}
+  h1 em{font-style:italic;color:var(--amber)}
+  .lede{font-size:20px;color:#3a382f;max-width:680px;margin:0}
+  .lede b{color:var(--ink)}
+
+  /* ---------- tldr strip ---------- */
+  .tldr{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:42px 0 8px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 16px 15px}
+  .stat .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+  .stat .v{font-family:var(--serif);font-size:25px;line-height:1.05;font-weight:600}
+  .stat .v small{font-family:var(--sans);font-size:13px;color:var(--muted);font-weight:400}
+  .stat.hot{background:var(--amber-wash);border-color:#f0dcab}
+  .stat.hot .v{color:var(--amber)}
+
+  /* ---------- sections ---------- */
+  section{padding:46px 0;border-top:1px solid var(--line)}
+  .sechead{display:flex;align-items:baseline;gap:14px;margin:0 0 18px}
+  .sechead .no{font-family:var(--mono);font-size:13px;color:var(--amber);
+    font-weight:600;padding-top:3px}
+  h2{font-family:var(--serif);font-weight:600;font-size:30px;letter-spacing:-.01em;margin:0}
+  h3{font-size:15px;font-family:var(--mono);letter-spacing:.02em;text-transform:uppercase;
+    color:var(--muted);margin:30px 0 10px}
+  p{margin:0 0 16px}
+  .col{max-width:720px}
+  strong{font-weight:650}
+  a.ref{color:var(--teal);text-decoration:none;border-bottom:1px solid #b9ddda}
+  a.ref:hover{background:var(--teal-wash)}
+
+  /* callout — the load-bearing idea */
+  .key{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--amber);
+    border-radius:0 12px 12px 0;padding:20px 22px;margin:22px 0;font-size:18px}
+  .key b{color:var(--amber)}
+  .formula{font-family:var(--mono);background:#fff;border:1px solid var(--line);
+    border-radius:9px;padding:13px 16px;display:inline-block;font-size:17px;margin:4px 0 6px}
+  .formula sub,.formula sup{font-size:.72em}
+
+  /* ---------- code ---------- */
+  figure.code{margin:24px 0}
+  figure.code figcaption{font-family:var(--mono);font-size:12px;color:var(--faint);
+    background:#1f222a;color:#aeb3bd;padding:8px 16px;border-radius:10px 10px 0 0;
+    display:flex;justify-content:space-between;align-items:center;border:1px solid #2a2e37;border-bottom:none}
+  figure.code figcaption .tag{color:#f2b134}
+  pre{margin:0;background:var(--code-bg);color:var(--code-fg);
+    border:1px solid #2a2e37;border-radius:0 0 10px 10px;
+    padding:16px 18px;overflow-x:auto;font-family:var(--mono);
+    font-size:13.5px;line-height:1.62;tab-size:2}
+  pre .c{color:var(--code-com)}            /* comment */
+  pre .s{color:#9ad08f}                    /* string  */
+  pre .k{color:#e0a3f0}                    /* keyword */
+  pre .n{color:#7fc7e8}                    /* number/builtin */
+  pre .badge{color:#f2b134;font-weight:600}
+  pre .hl{display:block;margin:0 -18px;padding:0 18px;
+    background:rgba(242,177,52,.10);border-left:3px solid var(--amber-bright)}
+  .cap{font-size:15px;color:var(--muted);margin:12px 0 0;max-width:720px}
+  .cap b{color:var(--ink)}
+
+  /* annotation list under code */
+  ol.ann{list-style:none;counter-reset:a;padding:0;margin:18px 0 0;max-width:740px}
+  ol.ann li{position:relative;padding:6px 0 6px 40px;font-size:15px;color:#3f3d35;
+    border-top:1px dashed var(--line)}
+  ol.ann li:first-child{border-top:none}
+  ol.ann li::before{counter-increment:a;content:counter(a);
+    position:absolute;left:0;top:7px;width:24px;height:24px;border-radius:50%;
+    background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;
+    display:flex;align-items:center;justify-content:center}
+  ol.ann b{color:var(--ink)}
+  code.inl{font-family:var(--mono);font-size:.86em;background:#f1ece0;
+    padding:1px 6px;border-radius:5px;color:#4a4438}
+
+  /* pipeline steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0 6px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .step .n{font-family:var(--mono);font-size:12px;color:var(--teal);font-weight:600;
+    display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .step .n i{width:22px;height:22px;border-radius:50%;background:var(--teal-wash);
+    color:var(--teal);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px}
+  .step h4{margin:0 0 6px;font-size:16px}
+  .step p{font-size:14px;color:var(--muted);margin:0}
+  .step p code{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:#f1ece0;padding:1px 5px;border-radius:4px}
+  figure.diagram{margin:24px 0 0;text-align:center}
+  figure.diagram img{max-width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px}
+  figure.diagram figcaption{font-size:14px;color:var(--muted);margin-top:10px}
+
+  /* two signals */
+  .signals{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:6px 0}
+  .sig{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .sig .lab{font-family:var(--mono);font-size:13px;font-weight:600;margin-bottom:4px}
+  .sig.l .lab{color:var(--amber)} .sig.j .lab{color:var(--teal)}
+  .sig .typ{font-family:var(--mono);font-size:11px;color:var(--faint);margin-bottom:10px}
+  .sig p{font-size:14.5px;color:#3f3d35;margin:0}
+
+  /* schedule mini-viz */
+  .sched{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:10px 0 4px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px}
+  .panel .t{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between}
+  .panel .t b{color:var(--ink)}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:70px}
+  .bars span{flex:1;background:linear-gradient(var(--amber-bright),var(--amber));border-radius:3px 3px 0 0;opacity:.92}
+  .axis{font-family:var(--mono);font-size:10px;color:var(--faint);display:flex;justify-content:space-between;margin-top:7px}
+
+  /* gotchas */
+  .gotchas{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+  .got{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative}
+  .got::before{content:"!";position:absolute;top:16px;right:18px;font-family:var(--mono);
+    font-weight:700;color:#e7b94e;font-size:15px}
+  .got.red::before{content:"\26A0";color:#d9682a}
+  .got h4{margin:0 0 7px;font-size:16px;padding-right:18px}
+  .got p{font-size:14px;color:#46443c;margin:0}
+  .got code{font-family:var(--mono);font-size:12px;background:#f1ece0;padding:1px 5px;border-radius:4px;color:#4a4438}
+  .got.red{border-color:#f0cdb4;background:#fdf3ec}
+
+  footer{padding:40px 0 70px;color:var(--faint);font-size:13px;font-family:var(--mono);
+    border-top:1px solid var(--line)}
+  footer a{color:var(--muted)}
+
+  @media (max-width:760px){
+    .tldr{grid-template-columns:1fr 1fr}
+    .steps,.signals,.sched,.gotchas{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <span class="brand">🧢 Curriculum FineWeb</span>
+  <a href="#insight">Insight</a>
+  <a href="#pipeline">Pipeline</a>
+  <a href="#signals">Signals</a>
+  <a href="#mechanism">Mechanism</a>
+  <a href="#data">Data contract</a>
+  <a href="#budget">Budget</a>
+  <a href="#gotchas">Gotchas</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">BottleCap GPT-2 speedrun · data-prep arm</p>
+  <h1>Train faster by <em>re-ordering</em> the data,<br>not rewriting it.</h1>
+  <p class="lede">Curate the existing FineWeb tokens into an <b>easy&rarr;hard curriculum</b>. A cheap, distilled scorer labels all 5B tokens; an annealed schedule decides <b>when</b> the model meets each document &mdash; never <b>whether</b>. The training mix can&rsquo;t drift off the validation distribution, because the schedule ends on the full data.</p>
+
+  <div class="tldr">
+    <div class="stat"><div class="k">Model</div><div class="v">124M <small>GPT-2 (d12)</small></div></div>
+    <div class="stat hot"><div class="k">Target</div><div class="v">&le; 3.3821 <small>val loss</small></div></div>
+    <div class="stat"><div class="k">Baseline</div><div class="v">2.5B <small>tok · 4768 steps · 5.40 h</small></div></div>
+    <div class="stat"><div class="k">Budget</div><div class="v">5B <small>tokens · 1 GPU · no new data</small></div></div>
+  </div>
+</div></header>
+
+<!-- 1. INSIGHT -->
+<section id="insight"><div class="wrap col">
+  <div class="sechead"><span class="no">01</span><h2>The load-bearing insight</h2></div>
+  <p>The validation set is drawn from the <strong>same distribution</strong> as the training data. So the usual "clean the dataset" instinct backfires: if you hard-filter the "noise," you also delete patterns the <em>test</em> set still contains, and the model drifts <strong>away</strong> from the target &mdash; slower convergence, not faster.</p>
+
+  <div class="key">
+    The safe lever isn&rsquo;t <b>what</b> the model sees, it&rsquo;s <b>when</b>. Order the same documents easy&rarr;hard, and relax the ordering to nothing by the end. Every hard/rare doc is still seen &mdash; just later. Nothing is permanently removed, so the mix can&rsquo;t drift.
+  </div>
+
+  <p>Two consequences shape everything below. <strong>(1)</strong> Filtering is demoted to a cautious, possibly-negative ablation; <strong>ordering</strong> leads. <strong>(2)</strong> We need a per-document score that means <em>"how learnable is this right now"</em> &mdash; closer to difficulty than to "educational value" &mdash; cheap enough to run over all 5B tokens.</p>
+</div></section>
+
+<!-- 2. PIPELINE -->
+<section id="pipeline"><div class="wrap">
+  <div class="col">
+    <div class="sechead"><span class="no">02</span><h2>Distilling an expensive judgment into a cheap one</h2></div>
+    <p class="col">A frontier model is far too slow to score 5B tokens directly. So we distill its judgment down three hops &mdash; from an expensive teacher, to a small local labeler, to a classifier that runs over the whole corpus for almost nothing.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n"><i>1</i> GEPA prompt-opt</div>
+      <h4>Teacher &harr; local labeler</h4>
+      <p>A strong teacher (<code>gpt-5-mini</code>) gives reference labels + reflective feedback on ~500 samples. <a class="ref" href="https://dspy.ai/api/optimizers/GEPA/overview/">DSPy&nbsp;GEPA</a> evolves the <em>prompt</em> of a small <code>Qwen3.5-0.8B</code> labeler to match it.</p>
+    </div>
+    <div class="step">
+      <div class="n"><i>2</i> LLM labeling</div>
+      <h4>Optimised prompt &rarr; labels</h4>
+      <p>The tuned 0.8B labeler annotates a representative sample of <code>~50k&ndash;500k</code> docs. Cheap enough to scale, accurate enough to train on.</p>
+    </div>
+    <div class="step">
+      <div class="n"><i>3</i> Distill to fastText</div>
+      <h4>Train the corpus scorer</h4>
+      <p>Train a <a class="ref" href="https://fasttext.cc">fastText</a> classifier on <code>(text &rarr; label)</code>, then run it over <strong>all 5B tokens</strong>. Same move as <a class="ref" href="https://arxiv.org/abs/2505.05427">Ultra-FineWeb</a>.</p>
+    </div>
+  </div>
+
+  <figure class="diagram">
+    <img src="docs/loop_v1.png" alt="Three-stage distillation loop: GEPA prompt optimisation, LLM labeling, fastText classifier trained then run over the whole dataset.">
+    <figcaption>Expensive teacher &rarr; tuned 0.8B labeler &rarr; fastText scorer. Only the last hop touches the full corpus.</figcaption>
+  </figure>
+</div></section>
+
+<!-- 3. SIGNALS -->
+<section id="signals"><div class="wrap">
+  <div class="col">
+    <div class="sechead"><span class="no">03</span><h2>Two signals per document</h2></div>
+    <p class="col">The scorer emits exactly two things at <strong>doc level</strong> (line-level scoring is outside the compute budget for a full run).</p>
+  </div>
+  <div class="signals">
+    <div class="sig l">
+      <div class="lab">learnability</div>
+      <div class="typ">integer 0&ndash;10</div>
+      <p>"How coherent / well-formed / predictable is this passage?" Drives <strong>curriculum ordering</strong> and soft reweighting. This is the difficulty axis &mdash; the whole point &mdash; not an "educational value" score.</p>
+    </div>
+    <div class="sig j">
+      <div class="lab">junk</div>
+      <div class="typ">boolean</div>
+      <p>Genuine garbage only: encoding noise, boilerplate/nav, truncation, non-language, link farms. Used to <strong>down-weight</strong> (not delete) &mdash; or maybe replaced by a rule-based pass. Hard-dropping risks drift (see &sect;01).</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 4. MECHANISM -->
+<section id="mechanism"><div class="wrap">
+  <div class="col">
+    <div class="sechead"><span class="no">04</span><h2>The mechanism: annealed resampling</h2></div>
+    <p>Think of training as a clock from <strong>start</strong> to <strong>finish</strong>. Near the start, sample mostly easy (high-learnability) docs. Over time, relax the preference. By the finish, favour nothing &mdash; sample the full FineWeb mix as-is. One knob, <code class="inl">ALPHA</code>, sets how aggressive the start is.</p>
+    <p class="formula">W<sub>&lambda;</sub>(z) = &ell;<sup>&nbsp;&alpha;(1&minus;&lambda;)</sup>&nbsp;&nbsp;&nbsp;<span style="color:var(--muted)">&mdash; easy-first when &lambda; small, flat (uniform) as &lambda; &rarr; 1</span></p>
+  </div>
+
+  <div class="sched">
+    <div class="panel"><div class="t"><span>&lambda; = 0</span><b>start</b></div>
+      <div class="bars"><span style="height:96%"></span><span style="height:76%"></span><span style="height:58%"></span><span style="height:43%"></span><span style="height:30%"></span><span style="height:19%"></span><span style="height:11%"></span></div>
+      <div class="axis"><span>easy</span><span>hard</span></div></div>
+    <div class="panel"><div class="t"><span>&lambda; = 0.5</span><b>middle</b></div>
+      <div class="bars"><span style="height:74%"></span><span style="height:67%"></span><span style="height:60%"></span><span style="height:53%"></span><span style="height:46%"></span><span style="height:39%"></span><span style="height:32%"></span></div>
+      <div class="axis"><span>easy</span><span>hard</span></div></div>
+    <div class="panel"><div class="t"><span>&lambda; = 1</span><b>finish</b></div>
+      <div class="bars"><span style="height:55%"></span><span style="height:55%"></span><span style="height:55%"></span><span style="height:55%"></span><span style="height:55%"></span><span style="height:55%"></span><span style="height:55%"></span></div>
+      <div class="axis"><span>easy</span><span>hard</span></div></div>
+  </div>
+  <p class="cap"><b>Why it&rsquo;s safe:</b> the schedule <em>ends</em> flat, so the last shards are the untouched full distribution. The model still meets every hard/rare document &mdash; the curriculum only changes the order of arrival.</p>
+
+  <figure class="code">
+    <figcaption><span>build_curriculum.py <span class="tag">— the whole idea</span></span><span>IDEA.md</span></figcaption>
+<pre><span class="k">import</span> numpy <span class="k">as</span> np
+
+ALPHA = <span class="n">1.00</span>          <span class="c"># <span class="badge">1</span> the only knob: 0 = no curriculum, larger = stronger easy-first</span>
+
+<span class="c"># docs + their learnability score in [0,10]</span>
+docs, ell_raw = load_labeled_docs(<span class="s">"data/fineweb10B/fineweb_train_*.bin"</span>)
+lengths = np.array([<span class="k">len</span>(d) <span class="k">for</span> d <span class="k">in</span> docs])
+
+<span class="hl">ell = (ell_raw + <span class="n">0.5</span>) / <span class="n">10.5</span>     <span class="c"># <span class="badge">2</span> normalize into (0,1] so ell**x stays well-behaved</span></span>
+
+<span class="k">for</span> s <span class="k">in</span> <span class="k">range</span>(S):                       <span class="c"># S output shards, start -> finish</span>
+<span class="hl">    lam = s / (S - <span class="n">1</span>)                    <span class="c"># <span class="badge">3</span> training progress: 0 -> 1</span></span>
+<span class="hl">    w   = ell ** (ALPHA * (<span class="n">1</span> - lam))       <span class="c"># <span class="badge">4</span> W_λ: easy-first when λ small, flat as λ -> 1</span></span>
+    p   = w / w.sum()
+
+    picks, filled = [], <span class="n">0</span>
+    <span class="k">while</span> filled &lt; TOK:                  <span class="c"># <span class="badge">5</span> resample TOK tokens for this shard (with replacement)</span>
+        i = np.random.choice(<span class="k">len</span>(docs), p=p)
+        picks.append(docs[i])
+        filled += lengths[i]
+
+    write_bin(<span class="s">f"data/curriculum/curr_train_{s:06d}.bin"</span>, np.concatenate(picks))</pre>
+  </figure>
+  <ol class="ann">
+    <li><b>One knob, mild&rarr;aggressive.</b> <code class="inl">ALPHA = 0</code> reproduces the baseline mix exactly &mdash; the clean control. Larger values bias harder toward easy docs at the start.</li>
+    <li><b>Keep the exponent well-behaved.</b> Raw scores are 0&ndash;10; the <code class="inl">+0.5 / 10.5</code> shift keeps the lowest score strictly positive so <code class="inl">&ell;**x</code> never collapses to 0.</li>
+    <li><b>&lambda; is the clock.</b> 0 on the first shard, 1 on the last. It interpolates the exponent from <code class="inl">ALPHA</code> down to 0.</li>
+    <li><b>The idea in one line.</b> As &lambda;&rarr;1 the exponent &rarr; 0, every weight &rarr; 1, and the distribution flattens to the full FineWeb mix. This is what guarantees no permanent drift.</li>
+    <li><b>Output = numbered shards.</b> Each shard is an independent resample written in order. <em>That ordering is the entire curriculum</em> &mdash; see why next.</li>
+  </ol>
+</div></section>
+
+<!-- 5. DATA CONTRACT -->
+<section id="data"><div class="wrap">
+  <div class="col">
+    <div class="sechead"><span class="no">05</span><h2>The data contract &mdash; why ordering files <em>is</em> the curriculum</h2></div>
+    <p>Every data idea here is a pure <code class="inl">.bin &rarr; .bin</code> transform. Two short pieces of the real loader explain the format you write into, and why the <strong>filename order you choose becomes the training order</strong> &mdash; with no shuffle anywhere.</p>
+  </div>
+
+  <figure class="code">
+    <figcaption><span>train_gpt2.py <span class="tag">— the shard format</span></span><span>:216&ndash;226</span></figcaption>
+<pre><span class="k">def</span> _load_data_shard(filename):
+    <span class="k">with</span> <span class="k">open</span>(filename, <span class="s">"rb"</span>) <span class="k">as</span> f:
+<span class="hl">        header = np.frombuffer(f.read(<span class="n">256</span> * <span class="n">4</span>), dtype=np.int32)   <span class="c"># <span class="badge">1</span> 256×int32 header</span></span>
+        <span class="k">assert</span> header[<span class="n">0</span>] == <span class="n">20240520</span>, <span class="s">"magic number mismatch"</span>     <span class="c"># <span class="badge">2</span> magic</span>
+        <span class="k">assert</span> header[<span class="n">1</span>] == <span class="n">1</span>, <span class="s">"unsupported version"</span>
+        ntok = header[<span class="n">2</span>]                                          <span class="c"># claimed token count</span>
+<span class="hl">        tokens = np.frombuffer(f.read(), dtype=np.uint16)         <span class="c"># <span class="badge">3</span> flat uint16 token river</span></span>
+    <span class="k">assert</span> <span class="k">len</span>(tokens) == ntok
+    <span class="k">return</span> tokens</pre>
+  </figure>
+  <ol class="ann">
+    <li><b>Fixed 1024-byte header</b> (256 int32s), then raw tokens. Rewrite it whenever you emit a shard.</li>
+    <li><b>Magic <code class="inl">20240520</code>, version 1.</b> Get either wrong and the loader exits immediately &mdash; a useful tripwire.</li>
+    <li><b>A shard is just concatenated GPT-2 token ids</b> (<code class="inl">uint16</code>). Documents run end-to-end, separated by the EOT token <code class="inl">50256</code>. To reorder, split on EOT &rarr; resample docs &rarr; re-concatenate. <em>Verify the separator before trusting boundaries.</em></li>
+  </ol>
+
+  <figure class="code">
+    <figcaption><span>train_gpt2.py <span class="tag">— how batches are drawn (no shuffle!)</span></span><span>:237, 266&ndash;277</span></figcaption>
+<pre><span class="hl">self.files = <span class="k">sorted</span>(glob.glob(filename_pattern))    <span class="c"># <span class="badge">1</span> shards visited in filename order</span></span>
+
+<span class="k">def</span> next_batch(self):
+    buf = self.tokens[self.current_position : self.current_position + B*T + <span class="n">1</span>]
+    x = buf[:-<span class="n">1</span>].view(B, T)     <span class="c"># inputs</span>
+    y = buf[<span class="n">1</span>:].view(B, T)      <span class="c"># targets (next-token)</span>
+<span class="hl">    self.current_position += B * T * self.num_processes        <span class="c"># <span class="badge">2</span> slide a contiguous window</span></span>
+<span class="hl">    <span class="k">if</span> self.current_position + (B*T*self.num_processes + <span class="n">1</span>) &gt; <span class="k">len</span>(self.tokens):</span>
+        self.advance()          <span class="c"># <span class="badge">3</span> jump to next shard when the tail can't fill a window</span>
+    <span class="k">return</span> x.cuda(), y.cuda()</pre>
+  </figure>
+  <ol class="ann">
+    <li><b>No shuffle exists.</b> Shards are read in <code class="inl">sorted()</code> filename order, and within a shard the window just slides front-to-back. So <b>file order = training order</b>. Naming your shards <code class="inl">curr_train_000000.bin … _0000NN.bin</code> is literally what makes the model see easy data first.</li>
+    <li><b>Contiguous windows.</b> Reordering = reordering the token river. Nothing else in the loader needs to change &mdash; the curriculum lives entirely in how you wrote the bins.</li>
+    <li><b>The tail is dropped.</b> When a shard&rsquo;s leftover can&rsquo;t fill one more window, the loader advances and skips it. Keep shard sizes a multiple of <code class="inl">B·T</code>, or accept a small, consistent tail loss.</li>
+  </ol>
+</div></section>
+
+<!-- 6. BUDGET -->
+<section id="budget"><div class="wrap">
+  <div class="col">
+    <div class="sechead"><span class="no">06</span><h2>The budget you&rsquo;re racing</h2></div>
+    <p>This is the baseline command. The data-prep arm changes <strong>only</strong> <code class="inl">--input_bin</code> &mdash; point it at the curriculum shards and touch nothing else &mdash; so any speedup is attributable to the <em>data</em>, not the optimizer.</p>
+  </div>
+
+  <figure class="code">
+    <figcaption><span>run.sh <span class="tag">— baseline config</span></span><span>1× RTX 4090</span></figcaption>
+<pre>torchrun --standalone --nproc_per_node=1 train_gpt2.py \
+<span class="hl">  --input_bin <span class="s">"data/fineweb10B/fineweb_train_*.bin"</span> \   <span class="c"># <span class="badge">1</span> swap in: data/curriculum/curr_train_*.bin</span></span>
+  --model d12 \                  <span class="c"># 124M GPT-2</span>
+  --batch_size <span class="n">16</span> \              <span class="c"># <span class="badge">2</span> 16 × 1024 × 32 grad-accum</span>
+  --sequence_length <span class="n">1024</span> \       <span class="c">#    = 524,288 tokens / step</span>
+  --grad_accumulation_steps <span class="n">32</span> \
+<span class="hl">  --num_iterations <span class="n">4768</span> \        <span class="c"># <span class="badge">3</span> × 4768 ≈ 2.5B tokens  (budget allows 5B)</span></span>
+  --learning_rate <span class="n">0.0018</span> \
+  --warmup_iters <span class="n">256</span> \
+  --warmdown_iters <span class="n">1024</span> \
+  --weight_decay <span class="n">0.1</span> \
+  --val_loss_every <span class="n">128</span></pre>
+  </figure>
+  <ol class="ann">
+    <li><b>The single switch.</b> Curriculum is opt-in via the glob &mdash; the cleanest possible A/B against baseline.</li>
+    <li><b>Effective batch = 524,288 tokens/step</b> (16 × 1024 × 32). Keep this fixed across arms; changing it would force LR re-tuning and muddy the comparison.</li>
+    <li><b>The headline bet is "less-but-better":</b> train on <em>fewer</em> than 2.5B tokens and report the <strong>earliest step that crosses 3.3821</strong>. Run a fixed-2.5B isolation A/B as the control.</li>
+  </ol>
+</div></section>
+
+<!-- 7. GOTCHAS -->
+<section id="gotchas"><div class="wrap">
+  <div class="sechead"><span class="no">07</span><h2>Gotchas</h2></div>
+  <div class="gotchas">
+    <div class="got red">
+      <h4>Don&rsquo;t hard-filter</h4>
+      <p>The val set is <strong>in-distribution</strong>. Deleting "noise" deletes patterns the test set also contains &rarr; the mix drifts off-target. Lead with ordering; treat <code>junk</code>-dropping as a cautious, documented ablation that down-weights rather than deletes.</p>
+    </div>
+    <div class="got red">
+      <h4>File order = training order</h4>
+      <p>There is no shuffle. The loader reads shards in <code>sorted()</code> filename order and slides front-to-back. Mis-name a shard and the curriculum silently breaks with no error. Zero-pad indices: <code>_000000.bin</code>, not <code>_0.bin</code>.</p>
+    </div>
+    <div class="got">
+      <h4>Split on EOT (50256)</h4>
+      <p>Docs are concatenated and separated by the EOT token. If you reshuffle without splitting on it you&rsquo;ll fuse or truncate documents and corrupt boundaries. Doc-level only &mdash; line-level scoring is out of budget. <em>Verify the separator value first.</em></p>
+    </div>
+    <div class="got">
+      <h4>The schedule must end flat</h4>
+      <p>If the last shards aren&rsquo;t the full untouched mix (<code>&lambda;&rarr;1</code>, exponent&rarr;0), the model never sees the hard tail and you <em>have</em> drifted off-distribution. The anneal-to-uniform is the safety property, not a detail.</p>
+    </div>
+    <div class="got">
+      <h4>No new datasets</h4>
+      <p>Competition rule: you may <strong>modify</strong> existing FineWeb, never add data. The curriculum resamples what&rsquo;s already there &mdash; with replacement is fine, importing isn&rsquo;t.</p>
+    </div>
+    <div class="got">
+      <h4>LR fairness rule</h4>
+      <p>If an arm changes the learning rate (e.g. hard-first + a bigger early LR), you must <strong>re-tune the baseline LR too</strong> and report it as a separate 2-factor study &mdash; keep the data-only headline uncontaminated.</p>
+    </div>
+    <div class="got">
+      <h4>Shard tail is dropped</h4>
+      <p><code>next_batch</code> skips a shard&rsquo;s leftover tokens once they can&rsquo;t fill a full <code>B·T</code> window. With resampled shards this can quietly under-sample whatever lands at the tail &mdash; size shards to a multiple of <code>B·T</code>.</p>
+    </div>
+    <div class="got">
+      <h4>Logged loss &amp; grad-accum</h4>
+      <p>Per-microstep loss is already divided by <code>grad_accumulation_steps</code> before it&rsquo;s accumulated for logging (recently fixed). Don&rsquo;t double-divide when comparing curriculum vs. baseline logs.</p>
+    </div>
+    <div class="got">
+      <h4>torch.compile on RTX</h4>
+      <p>Aggressive autotune can hit shared-memory / "insufficient SMs" errors on some cards. If a run won&rsquo;t start, disable <code>torch.compile</code> &mdash; slightly slower, but unblocks the comparison.</p>
+    </div>
+    <div class="got">
+      <h4>Measure the right number</h4>
+      <p>The metric is cross-entropy on a fixed <code>1,048,576</code>-token val set. Compare arms by <strong>wall-clock (or step) to first cross 3.3821</strong>, not final loss &mdash; this is a speedrun, not a min-loss race.</p>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  Sources: <a href="IDEA.md">IDEA.md</a> · train_gpt2.py · run.sh · data/cached_fineweb10B.py · README.md &nbsp;·&nbsp;
+  Fork of <a href="https://github.com/KellerJordan/modded-nanogpt">modded-nanogpt</a> for <a href="https://www.bottlecapai.com">BottleCapAI</a>.
+</div></footer>
+
+</body>
+</html>
